@@ -149,34 +149,49 @@ perfil_usuario = st.session_state["perfil_radio"]
 # header de Streamlit: ahí vive el menú de configuración con el cambio de tema.
 st.markdown("""
 <style>
-.block-container {padding-top: 1.5rem; max-width: 1400px;}
+/* Contenedor principal centrado y con ancho de página */
+.block-container {padding-top: 1.2rem; max-width: 1200px; margin: 0 auto;}
 
-/* Encabezado de la aplicación */
+/* ===== Encabezado ===== */
 .app-header {
-    background: #1b4f72;
+    background: linear-gradient(135deg, #154360 0%, #1b4f72 60%, #21618c 100%);
     color: #ffffff;
-    padding: 0.9rem 1.5rem;
-    border-radius: 6px 6px 0 0;
-    font-size: 1.5rem;
+    padding: 1.4rem 1rem 1.2rem 1rem;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+}
+.app-header .titulo {
+    font-size: 1.9rem;
     font-weight: 700;
     letter-spacing: 0.02em;
+    line-height: 1.2;
+    margin: 0;
 }
-.app-header span {font-weight: 300; font-size: 0.95rem; margin-left: 0.75rem; opacity: 0.85;}
+.app-header .subtitulo {
+    display: block;
+    font-weight: 300;
+    font-size: 0.95rem;
+    opacity: 0.85;
+    margin-top: 0.35rem;
+}
 
-/* Barra de navegación: botones como pestañas planas de ancho completo */
+/* ===== Barra de navegación: pestañas planas de ancho completo ===== */
 .st-key-navbar {gap: 0 !important;}
-.st-key-navbar [data-testid="stHorizontalBlock"] {gap: 0 !important;}
-.st-key-navbar [data-testid="stColumn"] {padding: 0 !important;}
+.st-key-navbar [data-testid="stHorizontalBlock"] {gap: 0 !important; flex-wrap: nowrap;}
+.st-key-navbar [data-testid="stColumn"] {padding: 0 !important; min-width: 0;}
 .st-key-navbar button {
     width: 100%;
     border-radius: 0 !important;
     border: none !important;
     border-bottom: 3px solid var(--primary-color, #2e86c1) !important;
-    padding: 0.65rem 0 !important;
+    padding: 0.7rem 0.25rem !important;
     font-weight: 600;
+    font-size: 0.92rem;
     box-shadow: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-/* Pestaña inactiva: fondo secundario del tema, texto del tema */
 .st-key-navbar button[kind="secondary"] {
     background: var(--secondary-background-color) !important;
     color: var(--text-color) !important;
@@ -184,26 +199,42 @@ st.markdown("""
 .st-key-navbar button[kind="secondary"]:hover {
     background: color-mix(in srgb, var(--primary-color, #2e86c1) 22%, var(--secondary-background-color)) !important;
 }
-/* Pestaña activa: color primario del tema */
 .st-key-navbar button[kind="primary"] {
     background: var(--primary-color, #2e86c1) !important;
     color: #ffffff !important;
 }
+.st-key-navbar button p {font-size: 0.92rem !important;}
 
-/* Barra de filtros bajo las pestañas, con el fondo secundario del tema */
+/* ===== Barra de filtros bajo las pestañas ===== */
 .st-key-filtros {
     background: var(--secondary-background-color);
-    border-radius: 0 0 6px 6px;
-    padding: 0.4rem 1rem 0.9rem 1rem !important;
-    margin-bottom: 0.8rem;
+    border-radius: 0 0 8px 8px;
+    padding: 0.5rem 1.25rem 1rem 1.25rem !important;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
+/* Neutralizar el acento rojo del tema oscuro por defecto en los inputs */
+.st-key-filtros [data-baseweb="input"],
+.st-key-filtros [data-baseweb="select"] > div {
+    border-color: color-mix(in srgb, var(--text-color) 25%, transparent) !important;
+    box-shadow: none !important;
+}
+.st-key-filtros [data-baseweb="input"]:focus-within,
+.st-key-filtros [data-baseweb="select"] > div:focus-within {
+    border-color: var(--primary-color, #2e86c1) !important;
+}
+
+/* Métricas y tarjetas con aire uniforme */
+[data-testid="stMetric"] {text-align: center;}
 </style>
 """, unsafe_allow_html=True)
 
 # --- Encabezado ---
 st.markdown(
-    '<div class="app-header">🎓 Destino Académico'
-    '<span>Explorador de carreras — datos SIES 2025-2026</span></div>',
+    '<div class="app-header">'
+    '<div class="titulo">🎓 Destino Académico</div>'
+    '<span class="subtitulo">Explorador de carreras — datos oficiales SIES 2025-2026, mifuturo.cl</span>'
+    '</div>',
     unsafe_allow_html=True,
 )
 
