@@ -134,14 +134,22 @@ st.sidebar.title("Destino Académico")
 
 PERFILES = ["Inicio", "Estudiante", "Apoderado", "Profesor / Orientador", "Jefe UTP", "Modelos analíticos"]
 
-perfil_usuario = st.sidebar.radio("Perfil de usuario", PERFILES, key="perfil_radio")
+# Navegación tipo pestañas en la parte superior (segmented control permite
+# seleccionar la vista también desde las tarjetas de Inicio, cosa que st.tabs no soporta)
+if "perfil_radio" not in st.session_state:
+    st.session_state["perfil_radio"] = "Inicio"
+
+perfil_usuario = st.segmented_control(
+    "Navegación", PERFILES, key="perfil_radio", label_visibility="collapsed"
+)
+if perfil_usuario is None:  # el control permite des-seleccionar; volvemos a Inicio
+    perfil_usuario = "Inicio"
 
 
 def _ir_a(perfil: str):
     st.session_state["perfil_radio"] = perfil
 
 
-st.sidebar.markdown("---")
 st.sidebar.subheader("Filtros")
 
 busqueda = st.sidebar.text_input(
