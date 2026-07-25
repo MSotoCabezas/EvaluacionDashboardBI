@@ -3,10 +3,10 @@ Destino Académico — Dashboard (Streamlit)
 -----------------------------------------
 Capa de PRESENTACIÓN únicamente: este script NO limpia datos ni entrena modelos.
 
-- Bases de datos: generadas por `01_DataPreparation.ipynb` en `Data\\Clean\\`
+- Bases de datos: generadas por `01_DataPreparation.ipynb` en `Data/Clean/`
   (`dataset_carrera_generica.parquet`, `estadisticas_carrera.parquet`,
   `combos_ingresos.parquet`).
-- Modelos: entrenados y guardados por `02_Modeling.ipynb` en `Models\\`
+- Modelos: entrenados y guardados por `02_Modeling.ipynb` en `Models/`
   (`modelo_ingresos.joblib`, `segmentacion.joblib`, `recomendador_config.joblib`).
 
 Unidad de análisis: carrera genérica (una fila por carrera, consolidando
@@ -27,11 +27,11 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Destino Académico", layout="wide")
 
-RUTA_GENERICA = r"Data\Clean\dataset_carrera_generica.parquet"
-RUTA_COMBOS = r"Data\Clean\combos_ingresos.parquet"
-RUTA_MODELO_INGRESOS = r"Models\modelo_ingresos.joblib"
-RUTA_SEGMENTACION = r"Models\segmentacion.joblib"
-RUTA_RECOMENDADOR = r"Models\recomendador_config.joblib"
+RUTA_GENERICA = "Data/Clean/dataset_carrera_generica.parquet"
+RUTA_COMBOS = "Data/Clean/combos_ingresos.parquet"
+RUTA_MODELO_INGRESOS = "Models/modelo_ingresos.joblib"
+RUTA_SEGMENTACION = "Models/segmentacion.joblib"
+RUTA_RECOMENDADOR = "Models/recomendador_config.joblib"
 
 KEY = "Área Carrera Genérica"
 COL_PUNTAJE_CORTE = "puntaje_corte_paes"
