@@ -132,52 +132,85 @@ def recomendar_carreras(df: pd.DataFrame, puntaje_estudiante: float,
 # ---------------------------------------------------------------------------
 PERFILES = ["Inicio", "Estudiante", "Apoderado", "Profesor / Orientador", "Jefe UTP", "Modelos analíticos"]
 
-# --- Estilo de pestañas: barra horizontal de ancho completo, pestaña activa con fondo azul ---
+if "perfil_radio" not in st.session_state:
+    st.session_state["perfil_radio"] = "Inicio"
+
+
+def _ir_a(perfil: str):
+    st.session_state["perfil_radio"] = perfil
+
+
+perfil_usuario = st.session_state["perfil_radio"]
+
+# --- Estilo general de página: header propio, sin cromo de Streamlit, pestañas planas ---
 st.markdown("""
 <style>
-/* La barra de navegación ocupa todo el ancho y reparte las pestañas en partes iguales */
-div[data-testid="stSegmentedControl"] > div,
-div[data-testid="stButtonGroup"] > div {
+/* Ocultar cromo de Streamlit para que parezca una página web */
+#MainMenu, footer {visibility: hidden;}
+header[data-testid="stHeader"] {height: 0; visibility: hidden;}
+.block-container {padding-top: 1rem; max-width: 1400px;}
+
+/* Encabezado de la aplicación */
+.app-header {
+    background: #1b4f72;
+    color: #ffffff;
+    padding: 0.9rem 1.5rem;
+    border-radius: 6px 6px 0 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 0;
+}
+.app-header span {font-weight: 300; font-size: 0.95rem; margin-left: 0.75rem; opacity: 0.85;}
+
+/* Barra de navegación: botones como pestañas planas de ancho completo */
+.st-key-navbar {gap: 0 !important;}
+.st-key-navbar [data-testid="stHorizontalBlock"] {gap: 0 !important;}
+.st-key-navbar [data-testid="stColumn"] {padding: 0 !important;}
+.st-key-navbar button {
     width: 100%;
-    display: flex;
-    gap: 0;
-    background: #eaf1f6;
-    border-bottom: 2px solid #2e86c1;
-}
-div[data-testid="stSegmentedControl"] button,
-div[data-testid="stButtonGroup"] button {
-    flex: 1 1 0;
-    border: none !important;
     border-radius: 0 !important;
-    background: transparent;
-    color: #333;
-    font-weight: 500;
-    padding: 0.6rem 0;
+    border: none !important;
+    border-bottom: 3px solid #2e86c1 !important;
+    padding: 0.65rem 0 !important;
+    font-weight: 600;
+    box-shadow: none !important;
 }
-div[data-testid="stSegmentedControl"] button:hover,
-div[data-testid="stButtonGroup"] button:hover {
-    background: #d6e6f2;
-    color: #1b4f72;
+/* Pestaña inactiva */
+.st-key-navbar button[kind="secondary"] {
+    background: #eaf1f6 !important;
+    color: #1b4f72 !important;
 }
-/* Pestaña seleccionada: fondo azul sólido y texto blanco */
-div[data-testid="stSegmentedControl"] button[kind="segmented_controlActive"],
-div[data-testid="stButtonGroup"] button[kind="segmented_controlActive"],
-div[data-testid="stSegmentedControl"] button[aria-checked="true"],
-div[data-testid="stButtonGroup"] button[aria-checked="true"] {
+.st-key-navbar button[kind="secondary"]:hover {
+    background: #d6e6f2 !important;
+    color: #154360 !important;
+}
+/* Pestaña activa */
+.st-key-navbar button[kind="primary"] {
     background: #2e86c1 !important;
     color: #ffffff !important;
 }
-div[data-testid="stSegmentedControl"] button[kind="segmented_controlActive"] p,
-div[data-testid="stButtonGroup"] button[kind="segmented_controlActive"] p,
-div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
-div[data-testid="stButtonGroup"] button[aria-checked="true"] p {
-    color: #ffffff !important;
+
+/* Barra de filtros integrada al bloque superior */
+.st-key-filtros {
+    background: #f6f9fb;
+    border: 1px solid #dbe6ee;
+    border-top: none;
+    border-radius: 0;
+    padding: 0.5rem 1rem 0.9rem 1rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Barra de filtros (sobre las pestañas, como en un panel de control clásico) ---
-with st.container(border=True):
+# --- Encabezado ---
+st.markdown(
+    '<div class="app-header">🎓 Destino Académico'
+    '<span>Explorador de carreras — datos SIES 2025-2026</span></div>',
+    unsafe_allow_html=True,
+)
+
+# --- Barra de filtros ---
+with st.container(key="filtros"):
     fc1, fc2 = st.columns([2, 1])
     with fc1:
         busqueda = st.text_input(
@@ -189,21 +222,19 @@ with st.container(border=True):
         areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
         area_sel = st.selectbox("Área del conocimiento", areas)
 
-# --- Navegación tipo pestañas (segmented control permite seleccionar la vista
-# también desde las tarjetas de Inicio, cosa que st.tabs no soporta) ---
-if "perfil_radio" not in st.session_state:
-    st.session_state["perfil_radio"] = "Inicio"
-
-perfil_usuario = st.segmented_control(
-    "Navegación", PERFILES, key="perfil_radio", label_visibility="collapsed"
-)
-if perfil_usuario is None:  # el control permite des-seleccionar; volvemos a Inicio
-    perfil_usuario = "Inicio"
-
-
-def _ir_a(perfil: str):
-    st.session_state["perfil_radio"] = perfil
-
+# --- Barra de navegación (pestañas) ---
+with st.container(key="navbar"):
+    cols_nav = st.columns(len(PERFILES))
+    for col, perfil in zip(cols_nav, PERFILES):
+        with col:
+            st.button(
+                perfil,
+                key=f"nav_{perfil}",
+                type="primary" if perfil == perfil_usuario else "secondary",
+                on_click=_ir_a,
+                args=(perfil,),
+                width='stretch',
+            )
 
 df_filtrado = dataset.copy()
 if busqueda.strip():
@@ -226,7 +257,6 @@ if perfil_usuario != "Inicio":
 # Vista: Inicio (página de bienvenida)
 # ---------------------------------------------------------------------------
 if perfil_usuario == "Inicio":
-    st.title("Destino Académico")
     st.markdown(
         "Plataforma de apoyo a la decisión vocacional construida sobre datos oficiales "
         "del **SIES (mifuturo.cl)**: empleabilidad, ingresos, retención, aranceles y "

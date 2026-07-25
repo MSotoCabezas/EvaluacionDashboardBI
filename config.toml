@@ -1,0 +1,9 @@
+# Guardar como .streamlit/config.toml en la raíz del repositorio.
+# Fuerza el tema claro para que el dashboard se vea como página web
+# (con el tema oscuro por defecto, la barra de pestañas y filtros pierden contraste).
+[theme]
+base = "light"
+primaryColor = "#2e86c1"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f9fb"
+textColor = "#212f3d"
