@@ -25,7 +25,12 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 # Configuración de página y rutas
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Destino Académico", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="Destino Académico",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 RUTA_GENERICA = "Data/Clean/dataset_carrera_generica.parquet"
 RUTA_COMBOS = "Data/Clean/combos_ingresos.parquet"
@@ -128,9 +133,24 @@ def recomendar_carreras(df: pd.DataFrame, puntaje_estudiante: float,
 
 
 # ---------------------------------------------------------------------------
-# Sidebar — navegación y filtros globales
+# Navegación (sidebar) y shell tipo dashboard
 # ---------------------------------------------------------------------------
-PERFILES = ["Inicio", "Estudiante", "Apoderado", "Profesor / Orientador", "Jefe UTP", "Modelos analíticos"]
+PERFILES = [
+    "Inicio",
+    "Estudiante",
+    "Apoderado",
+    "Profesor / Orientador",
+    "Jefe UTP",
+    "Modelos analíticos",
+]
+PERFIL_ICONOS = {
+    "Inicio": ":material/space_dashboard:",
+    "Estudiante": ":material/school:",
+    "Apoderado": ":material/family_restroom:",
+    "Profesor / Orientador": ":material/co_present:",
+    "Jefe UTP": ":material/monitoring:",
+    "Modelos analíticos": ":material/network_intelligence:",
+}
 
 if "perfil_radio" not in st.session_state:
     st.session_state["perfil_radio"] = "Inicio"
@@ -138,128 +158,494 @@ if "perfil_radio" not in st.session_state:
 
 def _ir_a(perfil: str):
     st.session_state["perfil_radio"] = perfil
+    st.session_state["nav_radio"] = f"{PERFIL_ICONOS[perfil]}  {perfil}"
 
 
-perfil_usuario = st.session_state["perfil_radio"]
+# ---------------------------------------------------------------------------
+# Tema claro / oscuro (toggle en sidebar)
+# ---------------------------------------------------------------------------
+TEMAS_APP = {
+    "light": {
+        "base": "light",
+        "primaryColor": "#2E86C1",
+        "backgroundColor": "#F6F8FB",
+        "secondaryBackgroundColor": "#FFFFFF",
+        "textColor": "#17263A",
+    },
+    "dark": {
+        "base": "dark",
+        "primaryColor": "#4DA3DC",
+        "backgroundColor": "#0F1A26",
+        "secondaryBackgroundColor": "#17293C",
+        "textColor": "#E4EDF5",
+    },
+}
 
-# --- Estilo general de página ---
-# Los colores usan las variables CSS del tema de Streamlit (--primary-color,
-# --secondary-background-color, --text-color), por lo que las pestañas y la barra
-# de filtros se adaptan automáticamente al modo claro u oscuro. No se oculta el
-# header de Streamlit: ahí vive el menú de configuración con el cambio de tema.
-st.markdown("""
+if "tema_oscuro" not in st.session_state:
+    st.session_state["tema_oscuro"] = st.get_option("theme.base") == "dark"
+
+
+def _aplicar_tema(oscuro: bool):
+    """Sincroniza el tema nativo de Streamlit (widgets, gráficos y fondos)."""
+    tema = TEMAS_APP["dark" if oscuro else "light"]
+    try:
+        from streamlit import config as _config
+        for clave, valor in tema.items():
+            _config.set_option(f"theme.{clave}", valor)
+    except Exception:
+        pass
+
+
+def _alternar_tema():
+    st.session_state["tema_oscuro"] = not st.session_state["tema_oscuro"]
+    _aplicar_tema(st.session_state["tema_oscuro"])
+
+
+_aplicar_tema(st.session_state["tema_oscuro"])
+tema_actual = TEMAS_APP["dark" if st.session_state["tema_oscuro"] else "light"]
+
+# Variables CSS con valores concretos: esta versión de Streamlit no expone
+# --primary-color / --text-color, y sin ellas las tabs y tarjetas pierden color.
+st.markdown(f"""
 <style>
-/* Contenedor principal centrado y con ancho de página */
-.block-container {padding-top: 1.2rem; max-width: 1200px; margin: 0 auto;}
-
-/* ===== Encabezado ===== */
-.app-header {
-    background: linear-gradient(135deg, #154360 0%, #1b4f72 60%, #21618c 100%);
-    color: #ffffff;
-    padding: 1.4rem 1rem 1.2rem 1rem;
-    border-radius: 8px 8px 0 0;
-    text-align: center;
-}
-.app-header .titulo {
-    font-size: 1.9rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1.2;
-    margin: 0;
-}
-.app-header .subtitulo {
-    display: block;
-    font-weight: 300;
-    font-size: 0.95rem;
-    opacity: 0.85;
-    margin-top: 0.35rem;
-}
-
-/* ===== Barra de navegación: pestañas planas de ancho completo ===== */
-.st-key-navbar {gap: 0 !important;}
-.st-key-navbar [data-testid="stHorizontalBlock"] {gap: 0 !important; flex-wrap: nowrap;}
-.st-key-navbar [data-testid="stColumn"] {padding: 0 !important; min-width: 0;}
-.st-key-navbar button {
-    width: 100%;
-    border-radius: 0 !important;
-    border: none !important;
-    border-bottom: 3px solid var(--primary-color, #2e86c1) !important;
-    padding: 0.7rem 0.25rem !important;
-    font-weight: 600;
-    font-size: 0.92rem;
-    box-shadow: none !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.st-key-navbar button[kind="secondary"] {
-    background: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-}
-.st-key-navbar button[kind="secondary"]:hover {
-    background: color-mix(in srgb, var(--primary-color, #2e86c1) 22%, var(--secondary-background-color)) !important;
-}
-.st-key-navbar button[kind="primary"] {
-    background: var(--primary-color, #2e86c1) !important;
+:root, .stApp {{
+    --primary-color: {tema_actual['primaryColor']};
+    --background-color: {tema_actual['backgroundColor']};
+    --secondary-background-color: {tema_actual['secondaryBackgroundColor']};
+    --text-color: {tema_actual['textColor']};
+}}
+/* Botón de tema en la sidebar oscura */
+[data-testid="stSidebar"] .stButton > button {{
+    background: rgba(255,255,255,0.07) !important;
+    color: #c8d6e5 !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+}}
+[data-testid="stSidebar"] .stButton > button:hover {{
+    background: rgba(255,255,255,0.14) !important;
     color: #ffffff !important;
-}
-.st-key-navbar button p {font-size: 0.92rem !important;}
-
-/* ===== Barra de filtros bajo las pestañas ===== */
-.st-key-filtros {
-    background: var(--secondary-background-color);
-    border-radius: 0 0 8px 8px;
-    padding: 0.5rem 1.25rem 1rem 1.25rem !important;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-}
-/* Neutralizar el acento rojo del tema oscuro por defecto en los inputs */
-.st-key-filtros [data-baseweb="input"],
-.st-key-filtros [data-baseweb="select"] > div {
-    border-color: color-mix(in srgb, var(--text-color) 25%, transparent) !important;
-    box-shadow: none !important;
-}
-.st-key-filtros [data-baseweb="input"]:focus-within,
-.st-key-filtros [data-baseweb="select"] > div:focus-within {
-    border-color: var(--primary-color, #2e86c1) !important;
-}
-
-/* Métricas y tarjetas con aire uniforme */
-[data-testid="stMetric"] {text-align: center;}
+    border-color: rgba(255,255,255,0.3) !important;
+}}
+[data-testid="stSidebar"] .stButton > button [data-testid="stIconMaterial"] {{
+    color: inherit !important;
+}}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Encabezado ---
-st.markdown(
-    '<div class="app-header">'
-    '<div class="titulo">🎓 Destino Académico</div>'
-    '<span class="subtitulo">Explorador de carreras — datos oficiales SIES 2025-2026, mifuturo.cl</span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
+# Estilos: shell tipo producto (sidebar oscura fija + área de trabajo con tokens
+# del tema, para que siga funcionando en modo claro y oscuro).
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-# --- 1° Barra de navegación (pestañas) ---
-with st.container(key="navbar"):
-    cols_nav = st.columns(len(PERFILES))
-    for col, perfil in zip(cols_nav, PERFILES):
-        with col:
-            st.button(
-                perfil,
-                key=f"nav_{perfil}",
-                type="primary" if perfil == perfil_usuario else "secondary",
-                on_click=_ir_a,
-                args=(perfil,),
-                width='stretch',
-            )
+html, body,
+[data-testid="stAppViewContainer"],
+[data-testid="stSidebar"],
+button, input, textarea, select {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
 
-# --- 2° Barra de filtros (bajo las pestañas) ---
+/* ===== Área de trabajo ===== */
+.block-container {
+    padding: 1.1rem 2rem 2.5rem 2rem !important;
+    max-width: 1440px !important;
+}
+[data-testid="stHeader"] { background: transparent; }
+.stAppDeployButton { display: none; }
+
+.stApp h1, .stApp h2, .stApp h3, .stApp h4,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stHeadingWithActionElements"] h1,
+[data-testid="stHeadingWithActionElements"] h2,
+[data-testid="stHeadingWithActionElements"] h3 {
+    color: var(--text-color) !important;
+    letter-spacing: -0.01em;
+}
+
+/* ===== Sidebar oscura (constante en ambos temas) ===== */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0e1f31 0%, #122a42 100%) !important;
+    border-right: none;
+    min-width: 264px;
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color: #c8d6e5 !important;
+}
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.12);
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.4rem 0.2rem 1.05rem 0.2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    margin-bottom: 0.9rem;
+}
+.sidebar-brand .mark {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.55rem;
+    background: linear-gradient(135deg, #2e86c1, #1b4f72);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+}
+.sidebar-brand .name {
+    font-weight: 700;
+    font-size: 0.98rem;
+    line-height: 1.15;
+    color: #ffffff !important;
+    margin: 0;
+}
+.sidebar-brand .meta {
+    font-size: 0.7rem;
+    color: #8fa6bc !important;
+    margin: 0.2rem 0 0 0;
+}
+.sidebar-section {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7e95ab !important;
+    margin: 0.5rem 0 0.4rem 0.2rem;
+}
+
+/* Radio de navegación como menú de producto */
+[data-testid="stSidebar"] .stRadio [role="radiogroup"] {
+    gap: 0.15rem;
+}
+[data-testid="stSidebar"] .stRadio label {
+    width: 100%;
+    margin: 0;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-left: 3px solid transparent;
+}
+[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(255,255,255,0.07);
+}
+[data-testid="stSidebar"] .stRadio label > div:first-child {
+    display: none;                /* oculta el círculo del radio */
+}
+[data-testid="stSidebar"] .stRadio label p {
+    font-size: 0.88rem !important;
+    font-weight: 500;
+    color: #c8d6e5 !important;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+[data-testid="stSidebar"] .stRadio label [data-testid="stIconMaterial"] {
+    color: #8fa6bc !important;
+    font-size: 1.15rem !important;
+}
+[data-testid="stSidebar"] .stRadio label:has(input:checked) {
+    background: rgba(46,134,193,0.22);
+    border-left: 3px solid #2e86c1;
+}
+[data-testid="stSidebar"] .stRadio label:has(input:checked) p {
+    color: #ffffff !important;
+    font-weight: 650;
+}
+[data-testid="stSidebar"] .stRadio label:has(input:checked) [data-testid="stIconMaterial"] {
+    color: #5db3e8 !important;
+}
+
+/* ===== Cabecera de página ===== */
+.page-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.page-toolbar .eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary-color) !important;
+    margin: 0 0 0.2rem 0;
+}
+.page-toolbar .page-title {
+    margin: 0;
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: var(--text-color) !important;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+.page-toolbar .page-desc {
+    margin: 0.3rem 0 0 0;
+    font-size: 0.88rem;
+    opacity: 0.68;
+    color: var(--text-color) !important;
+    max-width: 46rem;
+}
+.page-toolbar .badge {
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+    color: var(--primary-color) !important;
+    border: 1px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+    white-space: nowrap;
+}
+
+/* ===== Toolbar de filtros ===== */
+.st-key-filtros {
+    background: var(--secondary-background-color) !important;
+    border: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+    border-radius: 0.75rem;
+    padding: 0.8rem 1.1rem 1rem 1.1rem !important;
+    margin-bottom: 1.4rem;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--text-color) 7%, transparent);
+}
+.st-key-filtros label,
+.st-key-filtros [data-testid="stWidgetLabel"] p {
+    color: var(--text-color) !important;
+    font-size: 0.78rem !important;
+    font-weight: 600;
+    opacity: 0.8;
+}
+.st-key-filtros [data-baseweb="input"],
+.st-key-filtros [data-baseweb="select"] > div {
+    border-color: color-mix(in srgb, var(--text-color) 20%, transparent) !important;
+    box-shadow: none !important;
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+    border-radius: 0.5rem !important;
+}
+.st-key-filtros [data-baseweb="input"]:focus-within,
+.st-key-filtros [data-baseweb="select"] > div:focus-within {
+    border-color: var(--primary-color) !important;
+}
+
+/* ===== KPI cards ===== */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 0.3rem 0 1.6rem 0;
+}
+.kpi-card {
+    background: var(--secondary-background-color);
+    border: 1px solid color-mix(in srgb, var(--text-color) 9%, transparent);
+    border-radius: 0.8rem;
+    padding: 1.05rem 1.2rem 1rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--text-color) 7%, transparent);
+}
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent, var(--primary-color));
+}
+.kpi-card .kpi-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.62;
+    color: var(--text-color) !important;
+    margin: 0 0 0.35rem 0;
+}
+.kpi-card .kpi-value {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-color) !important;
+    margin: 0;
+    line-height: 1.1;
+}
+.kpi-card .kpi-sub {
+    font-size: 0.74rem;
+    opacity: 0.55;
+    color: var(--text-color) !important;
+    margin: 0.4rem 0 0 0;
+}
+
+/* ===== Tarjetas (containers con borde) ===== */
+[data-testid="stVerticalBlockBorderWrapper"] > div {
+    border-color: color-mix(in srgb, var(--text-color) 10%, transparent) !important;
+    border-radius: 0.8rem !important;
+    background: var(--secondary-background-color);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--text-color) 7%, transparent);
+}
+
+/* Botones */
+.stButton > button {
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+}
+
+/* ===== Tabs como control segmentado profesional ===== */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.3rem;
+    background: var(--secondary-background-color);
+    border: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+    border-radius: 0.65rem;
+    padding: 0.3rem;
+    width: fit-content;
+    max-width: 100%;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--text-color) 7%, transparent);
+}
+.stTabs [data-baseweb="tab"] {
+    color: var(--text-color) !important;
+    background: transparent !important;
+    font-weight: 600;
+    font-size: 0.86rem;
+    border-radius: 0.45rem !important;
+    padding: 0.45rem 1.1rem !important;
+    height: auto !important;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.stTabs [data-baseweb="tab"] * { color: inherit !important; }
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--primary-color) !important;
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent) !important;
+}
+.stTabs [aria-selected="true"],
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    background: var(--primary-color) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+.stTabs [aria-selected="true"]:hover {
+    color: #ffffff !important;
+    background: var(--primary-color) !important;
+}
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] {
+    display: none !important;
+}
+.stTabs [data-testid="stIconMaterial"] {
+    font-size: 1.05rem !important;
+    vertical-align: -3px;
+}
+
+/* ===== Métricas nativas (vistas internas) ===== */
+[data-testid="stMetric"] {
+    background: var(--secondary-background-color);
+    border: 1px solid color-mix(in srgb, var(--text-color) 9%, transparent);
+    border-radius: 0.8rem;
+    padding: 0.85rem 1rem;
+}
+[data-testid="stMetricLabel"] { opacity: 0.7; }
+[data-testid="stMetricValue"] { color: var(--text-color) !important; }
+
+/* ===== Títulos de sección (subheader) ===== */
+.stApp [data-testid="stHeadingWithActionElements"] h3 {
+    font-size: 1.02rem !important;
+    font-weight: 700 !important;
+    margin: 0.4rem 0 0.1rem 0;
+    padding-bottom: 0;
+}
+
+/* ===== Tablas y widgets ===== */
+[data-testid="stDataFrame"] {
+    border: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+    border-radius: 0.65rem;
+    overflow: hidden;
+}
+.stApp [data-testid="stMain"] .stRadio [role="radiogroup"] {
+    gap: 1.1rem;
+}
+.stApp [data-testid="stMain"] .stCheckbox p,
+.stApp [data-testid="stMain"] .stRadio p {
+    font-size: 0.86rem !important;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1100px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+    .block-container { padding: 0.8rem 0.9rem 2rem 0.9rem !important; }
+    .page-toolbar .page-title { font-size: 1.25rem; }
+}
+@media (max-width: 560px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Sidebar: marca + navegación ---
+with st.sidebar:
+    st.markdown(
+        '<div class="sidebar-brand">'
+        '<div class="mark">DA</div>'
+        '<div>'
+        '<p class="name">Destino Académico</p>'
+        '<p class="meta">Panel de datos · SIES 2025-26</p>'
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<p class="sidebar-section">Vistas</p>', unsafe_allow_html=True)
+    opciones_nav = [f"{PERFIL_ICONOS[p]}  {p}" for p in PERFILES]
+    if "nav_radio" not in st.session_state:
+        st.session_state["nav_radio"] = opciones_nav[PERFILES.index(st.session_state["perfil_radio"])]
+    seleccion = st.radio(
+        "Navegación",
+        opciones_nav,
+        label_visibility="collapsed",
+        key="nav_radio",
+    )
+    perfil_usuario = seleccion.split("  ", 1)[-1].strip()
+    st.session_state["perfil_radio"] = perfil_usuario
+
+    st.markdown("---")
+    es_oscuro = st.session_state["tema_oscuro"]
+    st.button(
+        "Modo claro" if es_oscuro else "Modo oscuro",
+        icon=":material/light_mode:" if es_oscuro else ":material/dark_mode:",
+        on_click=_alternar_tema,
+        width="stretch",
+        key="btn_tema",
+    )
+    st.caption("Fuente: SIES · mifuturo.cl 2025-26")
+
+# --- Cabecera de página ---
+TITULOS_VISTA = {
+    "Inicio": ("Resumen general", "Indicadores clave del sistema de educación superior y acceso a los módulos."),
+    "Estudiante": ("Estudiante", "Empleabilidad, ingresos y puntajes de corte referenciales."),
+    "Apoderado": ("Apoderado", "Costo total, retorno de la inversión y dispersión de ingresos."),
+    "Profesor / Orientador": ("Profesor / Orientador", "Cortes PAES, duración real, retención y oferta por área."),
+    "Jefe UTP": ("Jefe UTP", "Demanda, vacantes vs matrícula y evolución de la empleabilidad."),
+    "Modelos analíticos": ("Modelos analíticos", "Recomendador PAES, predicción de ingresos y segmentación."),
+}
+titulo_vista, desc_vista = TITULOS_VISTA[perfil_usuario]
+
+# --- Filtros globales (toolbar) ---
 with st.container(key="filtros"):
-    fc1, fc2 = st.columns([2, 1])
+    fc1, fc2 = st.columns([2.4, 1.2])
     with fc1:
         busqueda = st.text_input(
             "Buscar carrera",
             placeholder="Ej: estadística, ingeniería, técnico...",
-            help="Filtra las carreras genéricas cuyo nombre contenga el texto (ignora mayúsculas y tildes).",
+            help="Filtra por nombre (sin importar mayúsculas ni tildes).",
         )
     with fc2:
         areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
@@ -273,57 +659,68 @@ if busqueda.strip():
 if area_sel != "Todas":
     df_filtrado = df_filtrado[df_filtrado["Área"] == area_sel]
 
-if perfil_usuario != "Inicio":
-    st.title(f"Vista: {perfil_usuario}")
-    st.caption(
-        f"{len(df_filtrado):,} carreras genéricas "
-        f"({int(df_filtrado['n_programas'].sum(skipna=True)):,} programas subyacentes). "
-        "Cada fila consolida todos los tipos de institución (ponderados por titulados) y todas las regiones."
-    )
+n_prog = int(df_filtrado["n_programas"].sum(skipna=True))
+st.markdown(
+    f'<div class="page-toolbar">'
+    f'<div><p class="eyebrow">Destino Académico</p>'
+    f'<h1 class="page-title">{titulo_vista}</h1>'
+    f'<p class="page-desc">{desc_vista}</p></div>'
+    f'<span class="badge">{len(df_filtrado):,} carreras · {n_prog:,} programas</span>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------------------------------
-# Vista: Inicio (página de bienvenida)
+# Vista: Inicio (dashboard resumen)
 # ---------------------------------------------------------------------------
 if perfil_usuario == "Inicio":
-    st.markdown(
-        "Plataforma de apoyo a la decisión vocacional construida sobre datos oficiales "
-        "del **SIES (mifuturo.cl)**: empleabilidad, ingresos, retención, aranceles y "
-        "matrícula de **165 carreras genéricas**, consolidando universidades, institutos "
-        "profesionales y centros de formación técnica de todo el país."
-    )
-    st.markdown("#### ¿Quién eres? Elige tu vista")
-
-    tarjetas = [
-        ("🎓", "Estudiante", "Estudiante",
-         "Compara empleabilidad e ingresos entre carreras y revisa los puntajes de corte referenciales."),
-        ("👪", "Apoderado", "Apoderado",
-         "Evalúa el costo total de cada carrera, los años para recuperar la inversión y la dispersión de sueldos."),
-        ("🧭", "Profesor / Orientador", "Profesor / Orientador",
-         "Explora puntajes de corte, duración real de los estudios, retención y oferta por área."),
-        ("🏫", "Jefe UTP", "Jefe UTP",
-         "Analiza demanda por carrera, vacantes versus matrícula y evolución de la empleabilidad."),
-        ("🤖", "Modelos analíticos", "Modelos analíticos",
-         "Recomendador de carreras según puntaje PAES, simulador de ingresos y segmentación de carreras."),
+    kpis = [
+        ("Carreras genéricas", f"{len(dataset):,}", "Consolidadas U + IP + CFT", "#2e86c1"),
+        ("Programas subyacentes", f"{int(dataset['n_programas'].sum(skipna=True)):,}", "Programas individuales", "#7d3ac1"),
+        ("Matrícula 1er año 2025", f"{int(dataset['Total Matrícula 1er año'].sum(skipna=True)):,}", "Estudiantes nuevos", "#1e8e5a"),
+        ("Titulados 2024", f"{int(dataset['Titulados Total'].sum(skipna=True)):,}", "Última cohorte cerrada", "#c1662e"),
     ]
+    kpi_html = '<div class="kpi-grid">'
+    for etiqueta, valor, detalle, acento in kpis:
+        kpi_html += (
+            f'<div class="kpi-card" style="--accent:{acento}">'
+            f'<p class="kpi-label">{etiqueta}</p>'
+            f'<p class="kpi-value">{valor}</p>'
+            f'<p class="kpi-sub">{detalle}</p></div>'
+        )
+    kpi_html += '</div>'
+    st.markdown(kpi_html, unsafe_allow_html=True)
 
-    cols = st.columns(3)
-    for i, (icono, titulo, perfil_destino, descripcion) in enumerate(tarjetas):
-        with cols[i % 3]:
-            with st.container(border=True):
-                st.markdown(f"### {icono} {titulo}")
-                st.caption(descripcion)
-                st.button("Entrar", key=f"btn_{perfil_destino}", on_click=_ir_a, args=(perfil_destino,), width='stretch')
+    st.markdown("##### Módulos del panel")
+    modulos = [
+        ("Estudiante", "Empleabilidad, ingresos y puntajes de corte PAES."),
+        ("Apoderado", "Costo total, ROI y rangos salariales al egreso."),
+        ("Profesor / Orientador", "Cortes, duración real, retención y oferta por área."),
+        ("Jefe UTP", "Demanda, vacantes vs matrícula y evolución."),
+        ("Modelos analíticos", "Recomendador, predicción de ingresos y segmentación."),
+        (None, None),  # celda vacía para cerrar la grilla
+    ]
+    for fila in range(0, len(modulos), 3):
+        cols = st.columns(3)
+        for col, (destino, detalle) in zip(cols, modulos[fila:fila + 3]):
+            if destino is None:
+                continue
+            with col:
+                with st.container(border=True):
+                    st.markdown(f"**{PERFIL_ICONOS[destino]}&nbsp; {destino}**")
+                    st.caption(detalle)
+                    st.button(
+                        "Abrir módulo",
+                        key=f"btn_{destino}",
+                        on_click=_ir_a,
+                        args=(destino,),
+                        width="stretch",
+                    )
 
-    st.markdown("---")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Carreras genéricas", f"{len(dataset):,}")
-    c2.metric("Programas subyacentes", f"{int(dataset['n_programas'].sum(skipna=True)):,}")
-    c3.metric("Matrícula 1er año 2025", f"{int(dataset['Total Matrícula 1er año'].sum(skipna=True)):,}")
-    c4.metric("Titulados 2024", f"{int(dataset['Titulados Total'].sum(skipna=True)):,}")
     st.caption(
         "Fuente: Servicio de Información de Educación Superior (SIES), Ministerio de Educación — "
-        "buscadores 2025-2026 de mifuturo.cl. Ingresos en pesos de septiembre de 2025."
+        "buscadores 2025-2026. Ingresos en pesos de septiembre de 2025."
     )
 
 
@@ -510,7 +907,11 @@ elif perfil_usuario == "Jefe UTP":
 # Vista: Modelos analíticos
 # ---------------------------------------------------------------------------
 elif perfil_usuario == "Modelos analíticos":
-    tab1, tab2, tab3 = st.tabs(["Recomendación de carreras", "Predicción de ingresos", "Segmentación"])
+    tab1, tab2, tab3 = st.tabs([
+        ":material/recommend: Recomendación de carreras",
+        ":material/payments: Predicción de ingresos",
+        ":material/scatter_plot: Segmentación",
+    ])
 
     # --- Modelo 1: Recomendación ---
     with tab1:
