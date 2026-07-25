@@ -62,4 +62,4 @@ Los notebooks también pueden ejecutarse desde Positron / VS Code / Jupyter. El 
 
 ## Autor
 
-**Martín Soto Cabezas** — Magíster en Data Science.
+**Martín Soto Cabezas** — Estudiante Magíster en Data Science UCM.
