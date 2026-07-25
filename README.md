@@ -4,7 +4,7 @@ Plataforma de apoyo a la decisión vocacional construida sobre datos oficiales d
 
 Proyecto final del curso de Business Intelligence — Magíster en Data Science, desarrollado bajo la metodología **CRISP-DM**.
 
-> 🔗 **Dashboard en línea:** [PEGAR-URL-DE-STREAMLIT-CLOUD-AQUÍ]
+> 🔗 **Dashboard en línea:** https://dbcarreras.streamlit.app/
 
 ## Vistas del dashboard
 
