@@ -142,13 +142,14 @@ def _ir_a(perfil: str):
 
 perfil_usuario = st.session_state["perfil_radio"]
 
-# --- Estilo general de página: header propio, sin cromo de Streamlit, pestañas planas ---
+# --- Estilo general de página ---
+# Los colores usan las variables CSS del tema de Streamlit (--primary-color,
+# --secondary-background-color, --text-color), por lo que las pestañas y la barra
+# de filtros se adaptan automáticamente al modo claro u oscuro. No se oculta el
+# header de Streamlit: ahí vive el menú de configuración con el cambio de tema.
 st.markdown("""
 <style>
-/* Ocultar cromo de Streamlit para que parezca una página web */
-#MainMenu, footer {visibility: hidden;}
-header[data-testid="stHeader"] {height: 0; visibility: hidden;}
-.block-container {padding-top: 1rem; max-width: 1400px;}
+.block-container {padding-top: 1.5rem; max-width: 1400px;}
 
 /* Encabezado de la aplicación */
 .app-header {
@@ -159,7 +160,6 @@ header[data-testid="stHeader"] {height: 0; visibility: hidden;}
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: 0.02em;
-    margin-bottom: 0;
 }
 .app-header span {font-weight: 300; font-size: 0.95rem; margin-left: 0.75rem; opacity: 0.85;}
 
@@ -171,33 +171,31 @@ header[data-testid="stHeader"] {height: 0; visibility: hidden;}
     width: 100%;
     border-radius: 0 !important;
     border: none !important;
-    border-bottom: 3px solid #2e86c1 !important;
+    border-bottom: 3px solid var(--primary-color, #2e86c1) !important;
     padding: 0.65rem 0 !important;
     font-weight: 600;
     box-shadow: none !important;
 }
-/* Pestaña inactiva */
+/* Pestaña inactiva: fondo secundario del tema, texto del tema */
 .st-key-navbar button[kind="secondary"] {
-    background: #eaf1f6 !important;
-    color: #1b4f72 !important;
+    background: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
 }
 .st-key-navbar button[kind="secondary"]:hover {
-    background: #d6e6f2 !important;
-    color: #154360 !important;
+    background: color-mix(in srgb, var(--primary-color, #2e86c1) 22%, var(--secondary-background-color)) !important;
 }
-/* Pestaña activa */
+/* Pestaña activa: color primario del tema */
 .st-key-navbar button[kind="primary"] {
-    background: #2e86c1 !important;
+    background: var(--primary-color, #2e86c1) !important;
     color: #ffffff !important;
 }
 
-/* Barra de filtros integrada al bloque superior */
+/* Barra de filtros bajo las pestañas, con el fondo secundario del tema */
 .st-key-filtros {
-    background: #f6f9fb;
-    border: 1px solid #dbe6ee;
-    border-top: none;
-    border-radius: 0;
-    padding: 0.5rem 1rem 0.9rem 1rem !important;
+    background: var(--secondary-background-color);
+    border-radius: 0 0 6px 6px;
+    padding: 0.4rem 1rem 0.9rem 1rem !important;
+    margin-bottom: 0.8rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -209,20 +207,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Barra de filtros ---
-with st.container(key="filtros"):
-    fc1, fc2 = st.columns([2, 1])
-    with fc1:
-        busqueda = st.text_input(
-            "Buscar carrera",
-            placeholder="Ej: estadística, ingeniería, técnico...",
-            help="Filtra las carreras genéricas cuyo nombre contenga el texto (ignora mayúsculas y tildes).",
-        )
-    with fc2:
-        areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
-        area_sel = st.selectbox("Área del conocimiento", areas)
-
-# --- Barra de navegación (pestañas) ---
+# --- 1° Barra de navegación (pestañas) ---
 with st.container(key="navbar"):
     cols_nav = st.columns(len(PERFILES))
     for col, perfil in zip(cols_nav, PERFILES):
@@ -235,6 +220,19 @@ with st.container(key="navbar"):
                 args=(perfil,),
                 width='stretch',
             )
+
+# --- 2° Barra de filtros (bajo las pestañas) ---
+with st.container(key="filtros"):
+    fc1, fc2 = st.columns([2, 1])
+    with fc1:
+        busqueda = st.text_input(
+            "Buscar carrera",
+            placeholder="Ej: estadística, ingeniería, técnico...",
+            help="Filtra las carreras genéricas cuyo nombre contenga el texto (ignora mayúsculas y tildes).",
+        )
+    with fc2:
+        areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
+        area_sel = st.selectbox("Área del conocimiento", areas)
 
 df_filtrado = dataset.copy()
 if busqueda.strip():
