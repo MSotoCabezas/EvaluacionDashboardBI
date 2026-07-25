@@ -25,7 +25,7 @@ import streamlit as st
 # ---------------------------------------------------------------------------
 # Configuración de página y rutas
 # ---------------------------------------------------------------------------
-st.set_page_config(page_title="Destino Académico", layout="wide")
+st.set_page_config(page_title="Destino Académico", layout="wide", initial_sidebar_state="collapsed")
 
 RUTA_GENERICA = "Data/Clean/dataset_carrera_generica.parquet"
 RUTA_COMBOS = "Data/Clean/combos_ingresos.parquet"
@@ -130,12 +130,67 @@ def recomendar_carreras(df: pd.DataFrame, puntaje_estudiante: float,
 # ---------------------------------------------------------------------------
 # Sidebar — navegación y filtros globales
 # ---------------------------------------------------------------------------
-st.sidebar.title("Destino Académico")
-
 PERFILES = ["Inicio", "Estudiante", "Apoderado", "Profesor / Orientador", "Jefe UTP", "Modelos analíticos"]
 
-# Navegación tipo pestañas en la parte superior (segmented control permite
-# seleccionar la vista también desde las tarjetas de Inicio, cosa que st.tabs no soporta)
+# --- Estilo de pestañas: barra horizontal de ancho completo, pestaña activa con fondo azul ---
+st.markdown("""
+<style>
+/* La barra de navegación ocupa todo el ancho y reparte las pestañas en partes iguales */
+div[data-testid="stSegmentedControl"] > div,
+div[data-testid="stButtonGroup"] > div {
+    width: 100%;
+    display: flex;
+    gap: 0;
+    background: #eaf1f6;
+    border-bottom: 2px solid #2e86c1;
+}
+div[data-testid="stSegmentedControl"] button,
+div[data-testid="stButtonGroup"] button {
+    flex: 1 1 0;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent;
+    color: #333;
+    font-weight: 500;
+    padding: 0.6rem 0;
+}
+div[data-testid="stSegmentedControl"] button:hover,
+div[data-testid="stButtonGroup"] button:hover {
+    background: #d6e6f2;
+    color: #1b4f72;
+}
+/* Pestaña seleccionada: fondo azul sólido y texto blanco */
+div[data-testid="stSegmentedControl"] button[kind="segmented_controlActive"],
+div[data-testid="stButtonGroup"] button[kind="segmented_controlActive"],
+div[data-testid="stSegmentedControl"] button[aria-checked="true"],
+div[data-testid="stButtonGroup"] button[aria-checked="true"] {
+    background: #2e86c1 !important;
+    color: #ffffff !important;
+}
+div[data-testid="stSegmentedControl"] button[kind="segmented_controlActive"] p,
+div[data-testid="stButtonGroup"] button[kind="segmented_controlActive"] p,
+div[data-testid="stSegmentedControl"] button[aria-checked="true"] p,
+div[data-testid="stButtonGroup"] button[aria-checked="true"] p {
+    color: #ffffff !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Barra de filtros (sobre las pestañas, como en un panel de control clásico) ---
+with st.container(border=True):
+    fc1, fc2 = st.columns([2, 1])
+    with fc1:
+        busqueda = st.text_input(
+            "Buscar carrera",
+            placeholder="Ej: estadística, ingeniería, técnico...",
+            help="Filtra las carreras genéricas cuyo nombre contenga el texto (ignora mayúsculas y tildes).",
+        )
+    with fc2:
+        areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
+        area_sel = st.selectbox("Área del conocimiento", areas)
+
+# --- Navegación tipo pestañas (segmented control permite seleccionar la vista
+# también desde las tarjetas de Inicio, cosa que st.tabs no soporta) ---
 if "perfil_radio" not in st.session_state:
     st.session_state["perfil_radio"] = "Inicio"
 
@@ -150,22 +205,6 @@ def _ir_a(perfil: str):
     st.session_state["perfil_radio"] = perfil
 
 
-st.sidebar.subheader("Filtros")
-
-busqueda = st.sidebar.text_input(
-    "Buscar carrera",
-    placeholder="Ej: estadística, ingeniería, técnico...",
-    help="Filtra las carreras genéricas cuyo nombre contenga el texto (ignora mayúsculas y tildes).",
-)
-
-areas = ["Todas"] + sorted(dataset["Área"].dropna().unique().tolist())
-area_sel = st.sidebar.selectbox("Área del conocimiento", areas)
-
-st.sidebar.caption(
-    "Cada fila es una carrera genérica: los indicadores consolidan todos los "
-    "tipos de institución (ponderados por titulados) y todas las regiones."
-)
-
 df_filtrado = dataset.copy()
 if busqueda.strip():
     patron = _normalizar(busqueda.strip())
@@ -178,7 +217,8 @@ if perfil_usuario != "Inicio":
     st.title(f"Vista: {perfil_usuario}")
     st.caption(
         f"{len(df_filtrado):,} carreras genéricas "
-        f"({int(df_filtrado['n_programas'].sum(skipna=True)):,} programas subyacentes)"
+        f"({int(df_filtrado['n_programas'].sum(skipna=True)):,} programas subyacentes). "
+        "Cada fila consolida todos los tipos de institución (ponderados por titulados) y todas las regiones."
     )
 
 
