@@ -60,6 +60,3 @@ Los notebooks también pueden ejecutarse desde Positron / VS Code / Jupyter. El 
 - Los indicadores de empleabilidad/ingresos de SIES no distinguen jornada (restricción del SII), por lo que la corrección por programas a distancia aplica a matrícula y vacantes.
 - SIES omite las carreras genéricas Física y Astronomía, Historia, Filosofía y Matemática y/o Estadística por alta continuidad de estudios; quedan sin indicadores de ingreso.
 
-## Autor
-
-**Martín Soto Cabezas** — Estudiante Magíster en Data Science UCM.
